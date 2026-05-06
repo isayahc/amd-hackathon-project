@@ -33,6 +33,14 @@ export function DetailPanel({ objectData, selectedComponent, activeNodeId, onSel
   }
 
   const bbox = objectData.preview.bbox;
+  const animationMetadata =
+    objectData.metadata.animation_metadata ??
+    (animationPlan
+      ? {
+          prompt: animationPrompt,
+          plan: animationPlan,
+        }
+      : null);
 
   async function handleGenerateAnimation() {
     if (!objectData) {
@@ -165,6 +173,32 @@ export function DetailPanel({ objectData, selectedComponent, activeNodeId, onSel
         )}
       </section>
 
+      <section className="panel metadata-panel">
+        <div className="panel-header">
+          <div>
+            <div className="eyebrow">Job Metadata</div>
+            <h2>Saved job record</h2>
+          </div>
+        </div>
+        <div className="metadata-grid">
+          <p>
+            <strong>Prompt:</strong> {objectData.metadata.prompt}
+          </p>
+          <p>
+            <strong>Datetime:</strong> {new Date(objectData.metadata.datetime).toLocaleString()}
+          </p>
+          <p>
+            <strong>Model:</strong> {objectData.metadata.model_used}
+          </p>
+          <p>
+            <strong>STEP file:</strong> {objectData.metadata.step_file_location}
+          </p>
+        </div>
+        <pre className="metadata-json">
+          {JSON.stringify({ animation_metadata: animationMetadata }, null, 2)}
+        </pre>
+      </section>
+
       <section className="panel code-panel">
         <div className="panel-header">
           <div>
@@ -172,7 +206,7 @@ export function DetailPanel({ objectData, selectedComponent, activeNodeId, onSel
             <h2>Generated code</h2>
           </div>
         </div>
-        <pre>{objectData.cadquery_code}</pre>
+        <pre>{objectData.metadata.code}</pre>
       </section>
     </section>
   );

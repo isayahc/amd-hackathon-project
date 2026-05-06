@@ -14,6 +14,11 @@ export type ObjectSummary = {
   prompt: string;
   created_at: string;
   step_file_url: string;
+  step_file_location: string;
+  model_used: string;
+  has_animation: boolean;
+  used_fallback: boolean;
+  summary: string | null;
   component_count: number;
 };
 
@@ -27,9 +32,19 @@ export type PreviewPayload = {
   tree?: Record<string, unknown>;
 };
 
+export type JobMetadata = {
+  prompt: string;
+  datetime: string;
+  model_used: string;
+  step_file_location: string;
+  animation_metadata: Record<string, unknown> | null;
+  code: string;
+};
+
 export type GeneratedObject = {
   id: number;
   prompt: string;
+  metadata: JobMetadata;
   cadquery_code: string;
   step_file_url: string;
   preview: PreviewPayload;

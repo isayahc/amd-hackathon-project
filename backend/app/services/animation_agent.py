@@ -53,6 +53,7 @@ class AnimationAgentOutput:
     duration: float
     loop: bool
     tracks: list[dict[str, Any]]
+    model_used: str
     used_fallback: bool = False
 
 
@@ -180,6 +181,7 @@ class AnimationAgentService:
             duration=duration,
             loop=bool(payload.get("loop", True)),
             tracks=tracks,
+            model_used=self.settings.openai_model,
         )
 
     def _normalize_vector(self, value: Any, default: list[float]) -> list[float]:
@@ -238,5 +240,6 @@ class AnimationAgentService:
             duration=duration,
             loop=True,
             tracks=tracks,
+            model_used="fallback",
             used_fallback=True,
         )
