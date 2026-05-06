@@ -6,9 +6,11 @@ import { StepViewer } from "./StepViewer.js";
 type DetailPanelProps = {
   objectData: GeneratedObject | null;
   selectedComponent: ComponentNode | null;
+  activeNodeId: string | null;
+  onSelectNode: (nodeId: string) => void;
 };
 
-export function DetailPanel({ objectData, selectedComponent }: DetailPanelProps) {
+export function DetailPanel({ objectData, selectedComponent, activeNodeId, onSelectNode }: DetailPanelProps) {
   const [animationPrompt, setAnimationPrompt] = useState(
     "Create a short showcase animation that highlights the most important components.",
   );
@@ -56,6 +58,8 @@ export function DetailPanel({ objectData, selectedComponent }: DetailPanelProps)
         selectedComponent={selectedComponent}
         components={objectData.components}
         animationPlan={animationPlan}
+        activeNodeId={activeNodeId}
+        onSelectNode={onSelectNode}
       />
 
       <section className="panel metrics-panel">

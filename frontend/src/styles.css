@@ -69,7 +69,7 @@ button {
 }
 
 .hero-grid,
-.workspace-grid,
+.workspace-shell,
 .detail-grid {
   position: relative;
   z-index: 1;
@@ -81,11 +81,8 @@ button {
   gap: 24px;
 }
 
-.workspace-grid {
-  display: grid;
-  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.8fr);
-  gap: 24px;
-  align-items: start;
+.workspace-shell {
+  display: block;
 }
 
 .detail-grid {
@@ -276,7 +273,7 @@ button {
 .viewer-shell {
   position: relative;
   margin: 18px 24px 0;
-  min-height: 420px;
+  min-height: min(72vh, 860px);
   border-radius: 22px;
   overflow: hidden;
   border: 1px solid rgba(148, 163, 184, 0.12);
@@ -287,7 +284,7 @@ button {
 
 .step-viewer-canvas {
   width: 100%;
-  height: 420px;
+  height: min(72vh, 860px);
 }
 
 .step-viewer-canvas canvas {
@@ -305,6 +302,51 @@ button {
   text-align: center;
   color: #cbd5e1;
   background: rgba(2, 8, 23, 0.55);
+}
+
+.viewer-overlay {
+  position: absolute;
+  z-index: 2;
+}
+
+.viewer-overlay-tree {
+  display: flex;
+  top: 20px;
+  left: 20px;
+  width: min(360px, calc(100% - 40px));
+  height: calc(100% - 40px);
+  max-height: calc(100% - 40px);
+}
+
+.tree-overlay {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 22px;
+  background: rgba(7, 13, 24, 0.82);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 40px rgba(2, 8, 23, 0.38);
+  overflow: hidden;
+}
+
+.tree-overlay-header {
+  padding: 18px 18px 0;
+}
+
+.tree-overlay-header h2 {
+  margin: 8px 0 0;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.tree-list-overlay {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 18px 18px;
 }
 
 .metric-cards article span {
@@ -427,12 +469,20 @@ button {
 
 @media (max-width: 1024px) {
   .hero-grid,
-  .workspace-grid {
-    grid-template-columns: 1fr;
+  .workspace-shell {
+    display: block;
   }
 
   .history-panel {
     max-height: none;
+  }
+
+  .viewer-overlay-tree {
+    width: min(320px, calc(100% - 32px));
+    top: 16px;
+    left: 16px;
+    height: calc(100% - 32px);
+    max-height: calc(100% - 32px);
   }
 }
 
@@ -459,5 +509,22 @@ button {
 
   .composer h1 {
     max-width: none;
+  }
+
+  .viewer-shell {
+    min-height: 70vh;
+  }
+
+  .step-viewer-canvas {
+    height: 70vh;
+  }
+
+  .viewer-overlay-tree {
+    right: 12px;
+    left: 12px;
+    top: 12px;
+    width: auto;
+    height: min(42vh, calc(100% - 24px));
+    max-height: min(42vh, calc(100% - 24px));
   }
 }

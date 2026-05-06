@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import occtimportjs from "occt-import-js";
 import occtWasmUrl from "occt-import-js/dist/occt-import-js.wasm?url";
+import { ComponentTree } from "./ComponentTree.js";
 import type { AnimationPlan, AnimationTrack, ComponentNode } from "../types.js";
 
 type StepViewerProps = {
@@ -10,6 +11,8 @@ type StepViewerProps = {
   selectedComponent: ComponentNode | null;
   components: ComponentNode[];
   animationPlan: AnimationPlan | null;
+  activeNodeId: string | null;
+  onSelectNode: (nodeId: string) => void;
 };
 
 type OcctNode = {
@@ -69,7 +72,14 @@ async function getOcctModule(): Promise<OcctModule> {
   return occtModulePromise;
 }
 
-export function StepViewer({ stepFileUrl, selectedComponent, components, animationPlan }: StepViewerProps) {
+export function StepViewer({
+  stepFileUrl,
+  selectedComponent,
+  components,
+  animationPlan,
+  activeNodeId,
+  onSelectNode,
+}: StepViewerProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const meshRecordsRef = useRef<MeshRecord[]>([]);
   const contentGroupRef = useRef<THREE.Group | null>(null);
@@ -77,6 +87,7 @@ export function StepViewer({ stepFileUrl, selectedComponent, components, animati
   const componentsRef = useRef<ComponentNode[]>(components);
   const animationPlanRef = useRef<AnimationPlan | null>(animationPlan);
   const animationStartedAtRef = useRef<number | null>(animationPlan ? performance.now() / 1000 : null);
+  const clickStartRef = useRef<{ x: number; y: number } | null>(null);
   const [status, setStatus] = useState("Loading STEP preview...");
 
   useEffect(() => {
@@ -99,6 +110,8 @@ export function StepViewer({ stepFileUrl, selectedComponent, components, animati
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color("#08111f");
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
 
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 5000);
     camera.position.set(140, 120, 140);
@@ -125,7 +138,7 @@ export function StepViewer({ stepFileUrl, selectedComponent, components, animati
 
     const contentGroup = new THREE.Group();
     scene.add(contentGroup);
-  contentGroupRef.current = contentGroup;
+    contentGroupRef.current = contentGroup;
 
     const grid = new THREE.GridHelper(220, 12, 0x1d4ed8, 0x334155);
     grid.position.y = -40;
@@ -193,10 +206,58 @@ export function StepViewer({ stepFileUrl, selectedComponent, components, animati
       animationFrame = window.requestAnimationFrame(animate);
     }
 
+    function handlePointerDown(event: PointerEvent) {
+      clickStartRef.current = { x: event.clientX, y: event.clientY };
+    }
+
+    function handlePointerUp(event: PointerEvent) {
+      if (!host || meshRecordsRef.current.length === 0) {
+        return;
+      }
+
+      const clickStart = clickStartRef.current;
+      clickStartRef.current = null;
+      if (!clickStart) {
+        return;
+      }
+
+      const travel = Math.hypot(event.clientX - clickStart.x, event.clientY - clickStart.y);
+      if (travel > 6) {
+        return;
+      }
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) {
+        return;
+      }
+
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
+      raycaster.setFromCamera(pointer, camera);
+
+      const intersections = raycaster.intersectObjects(contentGroup.children, false);
+      const intersection = intersections.find((item) => item.object instanceof THREE.Mesh);
+      if (!intersection || !(intersection.object instanceof THREE.Mesh)) {
+        return;
+      }
+
+      const meshIndex = meshRecordsRef.current.findIndex((record) => record.mesh === intersection.object);
+      if (meshIndex < 0) {
+        return;
+      }
+
+      const component = getComponentForMeshIndex(meshIndex, meshRecordsRef.current, componentsRef.current);
+      if (component) {
+        onSelectNode(component.node_id);
+      }
+    }
+
     const resizeObserver = new ResizeObserver(() => {
       resizeRenderer();
     });
     resizeObserver.observe(host);
+    renderer.domElement.addEventListener("pointerdown", handlePointerDown);
+    renderer.domElement.addEventListener("pointerup", handlePointerUp);
 
     void loadStep();
     animate();
@@ -205,6 +266,8 @@ export function StepViewer({ stepFileUrl, selectedComponent, components, animati
       cancelled = true;
       window.cancelAnimationFrame(animationFrame);
       resizeObserver.disconnect();
+      renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
+      renderer.domElement.removeEventListener("pointerup", handlePointerUp);
       controls.dispose();
       scene.traverse((object: THREE.Object3D) => {
         const mesh = object as THREE.Mesh;
@@ -223,7 +286,7 @@ export function StepViewer({ stepFileUrl, selectedComponent, components, animati
       baseGroupTransformRef.current = null;
       host.innerHTML = "";
     };
-  }, [stepFileUrl]);
+  }, [stepFileUrl, onSelectNode]);
 
   useEffect(() => {
     applySelectionHighlight(meshRecordsRef.current, selectedComponent, components);
@@ -239,6 +302,14 @@ export function StepViewer({ stepFileUrl, selectedComponent, components, animati
       </div>
       <div className="viewer-shell">
         <div ref={hostRef} className="step-viewer-canvas" />
+        <div className="viewer-overlay viewer-overlay-tree">
+          <ComponentTree
+            components={components}
+            activeNodeId={activeNodeId}
+            onSelect={onSelectNode}
+            overlay
+          />
+        </div>
         {status ? <div className="viewer-status">{status}</div> : null}
       </div>
     </section>
@@ -381,6 +452,59 @@ function getComponentMeshIndices(
   }
 
   return new Set();
+}
+
+function getComponentForMeshIndex(
+  meshIndex: number,
+  meshRecords: MeshRecord[],
+  components: ComponentNode[],
+): ComponentNode | null {
+  const record = meshRecords[meshIndex];
+  if (!record) {
+    return null;
+  }
+
+  const nonRootComponents = components.filter((component) => component.node_id !== "root");
+  let bestMatch: ComponentNode | null = null;
+  let bestScore = 0;
+
+  nonRootComponents.forEach((component) => {
+    const score = getComponentMatchScore(record, component);
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = component;
+    }
+  });
+
+  if (bestMatch) {
+    return bestMatch;
+  }
+
+  if (meshIndex >= 0 && meshIndex < nonRootComponents.length) {
+    return nonRootComponents[meshIndex];
+  }
+
+  return null;
+}
+
+function getComponentMatchScore(record: MeshRecord, component: ComponentNode): number {
+  const searchTerms = [
+    component.name,
+    component.node_id,
+    component.kind,
+    typeof component.metadata.operation === "string" ? component.metadata.operation : undefined,
+  ]
+    .map((value) => normalizeToken(value))
+    .filter((value): value is string => Boolean(value));
+
+  let score = 0;
+  searchTerms.forEach((term) => {
+    if (record.searchText.includes(term)) {
+      score += term.length;
+    }
+  });
+
+  return score;
 }
 
 function applyAnimationFrame(

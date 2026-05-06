@@ -4,18 +4,19 @@ type ComponentTreeProps = {
   components: ComponentNode[];
   activeNodeId: string | null;
   onSelect: (nodeId: string) => void;
+  overlay?: boolean;
 };
 
-export function ComponentTree({ components, activeNodeId, onSelect }: ComponentTreeProps) {
+export function ComponentTree({ components, activeNodeId, onSelect, overlay = false }: ComponentTreeProps) {
   return (
-    <section className="panel tree-panel">
-      <div className="panel-header">
+    <section className={overlay ? "tree-overlay" : "panel tree-panel"}>
+      <div className={overlay ? "tree-overlay-header" : "panel-header"}>
         <div>
           <div className="eyebrow">Hierarchy</div>
           <h2>Component graph</h2>
         </div>
       </div>
-      <div className="tree-list">
+      <div className={overlay ? "tree-list tree-list-overlay" : "tree-list"}>
         {components.length === 0 ? (
           <p className="empty-state">No component graph available.</p>
         ) : (

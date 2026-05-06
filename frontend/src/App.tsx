@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { generateObject, getObject, listObjects } from "./api.js";
-import { ComponentTree } from "./components/ComponentTree.js";
 import { DetailPanel } from "./components/DetailPanel.js";
 import { ObjectHistory } from "./components/ObjectHistory.js";
 import { PromptComposer } from "./components/PromptComposer.js";
@@ -90,13 +89,13 @@ export default function App() {
 
       {error ? <div className="error-banner">{error}</div> : null}
 
-      <section className="workspace-grid">
-        <ComponentTree
-          components={currentObject?.components ?? []}
+      <section className="workspace-shell">
+        <DetailPanel
+          objectData={currentObject}
+          selectedComponent={selectedComponent}
           activeNodeId={selectedNodeId}
-          onSelect={setSelectedNodeId}
+          onSelectNode={setSelectedNodeId}
         />
-        <DetailPanel objectData={currentObject} selectedComponent={selectedComponent} />
       </section>
     </main>
   );
