@@ -24,6 +24,7 @@ class GenerateResponse(BaseModel):
     step_file_url: str
     preview: dict[str, Any]
     components: list[ComponentNode]
+    animation_plan: AnimationPlan | None = None
     created_at: datetime
 
 

@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from app.config import get_settings
 from app.db import get_session
-from app.models import CADComponent, CADObject
+from app.models import CADAnimationPlan, CADComponent, CADObject, utc_now
 from app.schemas import AnimationPlan, ComponentNode, GenerateResponse, HealthResponse, ObjectDetail, ObjectSummary
 from app.services.animation_agent import AnimationAgentService
 from app.services.cadquery_agent import CadQueryAgentService
@@ -116,7 +116,7 @@ async def generate_object(
     session.add(cad_object)
     session.commit()
 
-    return _build_response(cad_object, component_records)
+    return _build_response(session, cad_object, component_records)
 
 
 @router.get("/objects", response_model=list[ObjectSummary])
@@ -149,7 +149,7 @@ def get_object(object_id: int, session: Session = Depends(get_session)) -> Objec
         .where(CADComponent.cad_object_id == object_id)
         .order_by(CADComponent.order_index.asc())
     ).all()
-    return _build_response(cad_object, components)
+    return _build_response(session, cad_object, components)
 
 
 @router.post("/objects/{object_id}/animation", response_model=AnimationPlan)
@@ -188,7 +188,7 @@ def generate_animation(
         preview=preview,
         prompt=request.prompt,
     )
-    return AnimationPlan(
+    animation_plan = AnimationPlan(
         title=animation.title,
         summary=animation.summary,
         duration=animation.duration,
@@ -196,6 +196,25 @@ def generate_animation(
         tracks=animation.tracks,
         used_fallback=animation.used_fallback,
     )
+    stored_plan = session.exec(
+        select(CADAnimationPlan).where(CADAnimationPlan.cad_object_id == object_id)
+    ).first()
+    if stored_plan is None:
+        stored_plan = CADAnimationPlan(
+            cad_object_id=object_id,
+            prompt=request.prompt,
+            plan_json=animation_plan.model_dump_json(),
+            updated_at=utc_now(),
+        )
+        session.add(stored_plan)
+    else:
+        stored_plan.prompt = request.prompt
+        stored_plan.plan_json = animation_plan.model_dump_json()
+        stored_plan.updated_at = utc_now()
+        session.add(stored_plan)
+    session.commit()
+
+    return animation_plan
 
 
 @router.get("/objects/{object_id}/step")
@@ -222,7 +241,7 @@ def download_preview_svg(object_id: int, session: Session = Depends(get_session)
     return FileResponse(path=preview_path, media_type="image/svg+xml", filename=preview_path.name)
 
 
-def _build_response(cad_object: CADObject, components: list[CADComponent]) -> GenerateResponse:
+def _build_response(session: Session, cad_object: CADObject, components: list[CADComponent]) -> GenerateResponse:
     preview = json.loads(cad_object.preview_metadata)
     payload_components = [
         ComponentNode(
@@ -237,6 +256,9 @@ def _build_response(cad_object: CADObject, components: list[CADComponent]) -> Ge
         )
         for component in components
     ]
+    stored_plan = session.exec(
+        select(CADAnimationPlan).where(CADAnimationPlan.cad_object_id == cad_object.id)
+    ).first()
     return GenerateResponse(
         id=cad_object.id,
         prompt=cad_object.prompt,
@@ -244,5 +266,6 @@ def _build_response(cad_object: CADObject, components: list[CADComponent]) -> Ge
         step_file_url=f"{settings.api_prefix}/objects/{cad_object.id}/step",
         preview=preview,
         components=payload_components,
+        animation_plan=(AnimationPlan.model_validate_json(stored_plan.plan_json) if stored_plan else None),
         created_at=cad_object.created_at,
     )

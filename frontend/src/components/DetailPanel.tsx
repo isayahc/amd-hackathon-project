@@ -17,10 +17,10 @@ export function DetailPanel({ objectData, selectedComponent }: DetailPanelProps)
   const [animationError, setAnimationError] = useState<string | null>(null);
 
   useEffect(() => {
-    setAnimationPlan(null);
+    setAnimationPlan(objectData?.animation_plan ?? null);
     setAnimationBusy(false);
     setAnimationError(null);
-  }, [objectData?.id]);
+  }, [objectData]);
 
   if (!objectData) {
     return (

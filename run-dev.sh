@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$ROOT_DIR/backend"
 FRONTEND_DIR="$ROOT_DIR/frontend"
-UVICORN_BIN="$ROOT_DIR/.venv/bin/uvicorn"
+PYTHON_BIN="$ROOT_DIR/.venv/bin/python"
 BACKEND_HOST="127.0.0.1"
 BACKEND_PORT="8000"
 FRONTEND_HOST="127.0.0.1"
@@ -53,7 +53,7 @@ kill_port_processes() {
 }
 
 require_file "$BACKEND_DIR/.env" "Backend env file"
-require_file "$UVICORN_BIN" "Uvicorn executable"
+require_file "$PYTHON_BIN" "Python executable"
 require_file "$FRONTEND_DIR/package.json" "Frontend package manifest"
 
 mkdir -p "$LOG_DIR"
@@ -71,10 +71,10 @@ rm -f "$BACKEND_PID_FILE" "$FRONTEND_PID_FILE"
 echo "Starting backend on http://$BACKEND_HOST:$BACKEND_PORT"
 nohup env \
     BACKEND_DIR="$BACKEND_DIR" \
-    UVICORN_BIN="$UVICORN_BIN" \
+    PYTHON_BIN="$PYTHON_BIN" \
     BACKEND_HOST="$BACKEND_HOST" \
     BACKEND_PORT="$BACKEND_PORT" \
-    bash -lc 'cd "$BACKEND_DIR" && set -a && source .env && set +a && exec "$UVICORN_BIN" app.main:app --host "$BACKEND_HOST" --port "$BACKEND_PORT"' \
+    bash -lc 'cd "$BACKEND_DIR" && set -a && source .env && set +a && exec "$PYTHON_BIN" -m uvicorn app.main:app --host "$BACKEND_HOST" --port "$BACKEND_PORT"' \
     >"$LOG_DIR/backend.log" 2>&1 < /dev/null &
 backend_pid=$!
 echo "$backend_pid" > "$BACKEND_PID_FILE"

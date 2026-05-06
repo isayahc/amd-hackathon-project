@@ -34,6 +34,7 @@ export type GeneratedObject = {
   step_file_url: string;
   preview: PreviewPayload;
   components: ComponentNode[];
+  animation_plan: AnimationPlan | null;
   created_at: string;
 };
 

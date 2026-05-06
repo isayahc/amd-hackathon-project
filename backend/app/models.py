@@ -20,6 +20,7 @@ class CADObject(SQLModel, table=True):
     preview_metadata: str = Field(sa_column=Column(Text, nullable=False))
     created_at: datetime = Field(default_factory=utc_now, nullable=False)
 
+
 class CADComponent(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     cad_object_id: int = Field(foreign_key="cadobject.id", nullable=False, index=True)
@@ -31,4 +32,12 @@ class CADComponent(SQLModel, table=True):
     order_index: int = 0
     color_hint: Optional[str] = None
     metadata_json: str = Field(default="{}", sa_column=Column(Text, nullable=False))
+
+
+class CADAnimationPlan(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    cad_object_id: int = Field(foreign_key="cadobject.id", nullable=False, index=True, unique=True)
+    prompt: Optional[str] = Field(default=None, sa_column=Column(Text, nullable=True))
+    plan_json: str = Field(sa_column=Column(Text, nullable=False))
+    updated_at: datetime = Field(default_factory=utc_now, nullable=False)
 
