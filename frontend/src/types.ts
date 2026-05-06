@@ -9,8 +9,17 @@ export type ComponentNode = {
   metadata: Record<string, unknown>;
 };
 
+export type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+  image_url: string | null;
+};
+
 export type ObjectSummary = {
   id: number;
+  session_uuid: string;
+  object_uuid: string;
+  version: number;
   prompt: string;
   created_at: string;
   step_file_url: string;
@@ -35,6 +44,9 @@ export type PreviewPayload = {
 export type JobMetadata = {
   prompt: string;
   datetime: string;
+  session_uuid: string;
+  object_uuid: string;
+  version: number;
   model_used: string;
   step_file_location: string;
   animation_metadata: Record<string, unknown> | null;
@@ -43,12 +55,16 @@ export type JobMetadata = {
 
 export type GeneratedObject = {
   id: number;
+  session_uuid: string;
+  object_uuid: string;
+  version: number;
   prompt: string;
   metadata: JobMetadata;
   cadquery_code: string;
   step_file_url: string;
   preview: PreviewPayload;
   components: ComponentNode[];
+  chat_messages: ChatMessage[];
   animation_plan: AnimationPlan | null;
   created_at: string;
 };

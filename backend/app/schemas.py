@@ -20,26 +20,42 @@ class ComponentNode(BaseModel):
 class JobMetadata(BaseModel):
     prompt: str
     datetime: datetime
+    session_uuid: str
+    object_uuid: str
+    version: int
     model_used: str
     step_file_location: str
     animation_metadata: dict[str, Any] | None = None
     code: str
 
 
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+    image_url: str | None = None
+
+
 class GenerateResponse(BaseModel):
     id: int
+    session_uuid: str
+    object_uuid: str
+    version: int
     prompt: str
     metadata: JobMetadata
     cadquery_code: str
     step_file_url: str
     preview: dict[str, Any]
     components: list[ComponentNode]
+    chat_messages: list[ChatMessage] = Field(default_factory=list)
     animation_plan: AnimationPlan | None = None
     created_at: datetime
 
 
 class ObjectSummary(BaseModel):
     id: int
+    session_uuid: str
+    object_uuid: str
+    version: int
     prompt: str
     created_at: datetime
     step_file_url: str

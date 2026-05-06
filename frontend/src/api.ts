@@ -38,6 +38,27 @@ export async function generateObject(prompt: string, imageFile: File | null): Pr
   return response.json();
 }
 
+export async function modifyObject(id: number, prompt: string, imageFile: File | null): Promise<GeneratedObject> {
+  const formData = new FormData();
+  formData.append("prompt", prompt);
+  if (imageFile) {
+    formData.append("image", imageFile);
+  }
+
+  const response = await fetch(`/api/objects/${id}/modify`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+    },
+    body: formData,
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || "Modification failed.");
+  }
+  return response.json();
+}
+
 export async function generateAnimation(id: number, prompt: string): Promise<AnimationPlan> {
   const response = await fetch(`/api/objects/${id}/animation`, {
     method: "POST",

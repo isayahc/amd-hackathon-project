@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { generateAnimation } from "../api.js";
 import type { AnimationPlan, ComponentNode, GeneratedObject } from "../types.js";
 import { StepViewer } from "./StepViewer.js";
@@ -8,9 +9,18 @@ type DetailPanelProps = {
   selectedComponent: ComponentNode | null;
   activeNodeId: string | null;
   onSelectNode: (nodeId: string) => void;
+  chatOverlay?: ReactNode;
+  versionOverlay?: ReactNode;
 };
 
-export function DetailPanel({ objectData, selectedComponent, activeNodeId, onSelectNode }: DetailPanelProps) {
+export function DetailPanel({
+  objectData,
+  selectedComponent,
+  activeNodeId,
+  onSelectNode,
+  chatOverlay,
+  versionOverlay,
+}: DetailPanelProps) {
   const [animationPrompt, setAnimationPrompt] = useState(
     "Create a short showcase animation that highlights the most important components.",
   );
@@ -26,15 +36,35 @@ export function DetailPanel({ objectData, selectedComponent, activeNodeId, onSel
 
   if (!objectData) {
     return (
-      <section className="panel detail-panel empty-detail">
-        <p>Select or generate an object to inspect its code, export, and component metadata.</p>
+      <section className="panel viewer-panel empty-preview-panel">
+        <div className="panel-header">
+          <div>
+            <div className="eyebrow">STEP Preview</div>
+            <h2>No active design</h2>
+          </div>
+        </div>
+        <div className="viewer-shell empty-viewer-shell">
+          <div className="empty-preview-copy">
+            <strong>Start a session from the chat.</strong>
+            <span>The first message creates the design. Later messages modify that same session design.</span>
+          </div>
+          {chatOverlay ? <div className="viewer-overlay viewer-overlay-chat">{chatOverlay}</div> : null}
+        </div>
       </section>
     );
   }
 
   const bbox = objectData.preview.bbox;
+  const jobMetadata = objectData.metadata ?? {
+    prompt: objectData.prompt,
+    datetime: objectData.created_at,
+    model_used: "Unknown",
+    step_file_location: objectData.step_file_url,
+    animation_metadata: null,
+    code: objectData.cadquery_code,
+  };
   const animationMetadata =
-    objectData.metadata.animation_metadata ??
+    jobMetadata.animation_metadata ??
     (animationPlan
       ? {
           prompt: animationPrompt,
@@ -68,6 +98,8 @@ export function DetailPanel({ objectData, selectedComponent, activeNodeId, onSel
         animationPlan={animationPlan}
         activeNodeId={activeNodeId}
         onSelectNode={onSelectNode}
+        chatOverlay={chatOverlay}
+        versionOverlay={versionOverlay}
       />
 
       <section className="panel metrics-panel">
@@ -182,16 +214,16 @@ export function DetailPanel({ objectData, selectedComponent, activeNodeId, onSel
         </div>
         <div className="metadata-grid">
           <p>
-            <strong>Prompt:</strong> {objectData.metadata.prompt}
+            <strong>Prompt:</strong> {jobMetadata.prompt}
           </p>
           <p>
-            <strong>Datetime:</strong> {new Date(objectData.metadata.datetime).toLocaleString()}
+            <strong>Datetime:</strong> {new Date(jobMetadata.datetime).toLocaleString()}
           </p>
           <p>
-            <strong>Model:</strong> {objectData.metadata.model_used}
+            <strong>Model:</strong> {jobMetadata.model_used}
           </p>
           <p>
-            <strong>STEP file:</strong> {objectData.metadata.step_file_location}
+            <strong>STEP file:</strong> {jobMetadata.step_file_location}
           </p>
         </div>
         <pre className="metadata-json">
@@ -206,7 +238,7 @@ export function DetailPanel({ objectData, selectedComponent, activeNodeId, onSel
             <h2>Generated code</h2>
           </div>
         </div>
-        <pre>{objectData.metadata.code}</pre>
+        <pre>{jobMetadata.code}</pre>
       </section>
     </section>
   );

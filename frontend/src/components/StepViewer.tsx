@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import occtimportjs from "occt-import-js";
@@ -13,6 +14,8 @@ type StepViewerProps = {
   animationPlan: AnimationPlan | null;
   activeNodeId: string | null;
   onSelectNode: (nodeId: string) => void;
+  chatOverlay?: ReactNode;
+  versionOverlay?: ReactNode;
 };
 
 type OcctNode = {
@@ -79,6 +82,8 @@ export function StepViewer({
   animationPlan,
   activeNodeId,
   onSelectNode,
+  chatOverlay,
+  versionOverlay,
 }: StepViewerProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const meshRecordsRef = useRef<MeshRecord[]>([]);
@@ -310,6 +315,12 @@ export function StepViewer({
             overlay
           />
         </div>
+        {versionOverlay || chatOverlay ? (
+          <div className="viewer-overlay viewer-overlay-right-rail">
+            {versionOverlay ? <div className="viewer-overlay-versions">{versionOverlay}</div> : null}
+            {chatOverlay ? <div className="viewer-overlay-chat">{chatOverlay}</div> : null}
+          </div>
+        ) : null}
         {status ? <div className="viewer-status">{status}</div> : null}
       </div>
     </section>
