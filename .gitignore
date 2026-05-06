@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.venv/
+venv/
+
+# Environment files
+.env
+.env.*
+!.env.example
+backend/.env
+frontend/.env
+
+# Backend storage and runtime output
+backend/storage/app.db
+backend/storage/uploads/
+backend/storage/steps/
+.run/
+*.log
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Tooling and editors
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+
+# Coverage and caches
+.coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+build-with-ag2/

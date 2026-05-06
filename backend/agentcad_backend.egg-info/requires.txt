@@ -1,0 +1,12 @@
+ag2[openai]>=0.9.0
+cadquery>=2.5.0
+fastapi>=0.115.0
+pillow>=10.4.0
+python-multipart>=0.0.9
+sqlmodel>=0.0.22
+uvicorn[standard]>=0.30.0
+
+[dev]
+httpx>=0.27.0
+pytest>=8.2.0
+ruff>=0.6.0
