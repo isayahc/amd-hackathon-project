@@ -17,9 +17,19 @@ class ComponentNode(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class JobMetadata(BaseModel):
+    prompt: str
+    datetime: datetime
+    model_used: str
+    step_file_location: str
+    animation_metadata: dict[str, Any] | None = None
+    code: str
+
+
 class GenerateResponse(BaseModel):
     id: int
     prompt: str
+    metadata: JobMetadata
     cadquery_code: str
     step_file_url: str
     preview: dict[str, Any]
@@ -33,6 +43,11 @@ class ObjectSummary(BaseModel):
     prompt: str
     created_at: datetime
     step_file_url: str
+    step_file_location: str
+    model_used: str
+    has_animation: bool = False
+    used_fallback: bool = False
+    summary: str | None = None
     component_count: int
 
 

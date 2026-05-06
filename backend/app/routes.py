@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import uuid
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
@@ -12,7 +13,15 @@ from pydantic import BaseModel
 from app.config import get_settings
 from app.db import get_session
 from app.models import CADAnimationPlan, CADComponent, CADObject, utc_now
-from app.schemas import AnimationPlan, ComponentNode, GenerateResponse, HealthResponse, ObjectDetail, ObjectSummary
+from app.schemas import (
+    AnimationPlan,
+    ComponentNode,
+    GenerateResponse,
+    HealthResponse,
+    JobMetadata,
+    ObjectDetail,
+    ObjectSummary,
+)
 from app.services.animation_agent import AnimationAgentService
 from app.services.cadquery_agent import CadQueryAgentService
 from app.services.cadquery_parser import components_to_tree, generate_arbitrary_step
@@ -65,17 +74,28 @@ async def generate_object(
     except RuntimeError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+    created_at = utc_now()
+    step_file_location = str(step_path.relative_to(Path(__file__).resolve().parent.parent))
     cad_object = CADObject(
         prompt=prompt,
         image_path=image_path,
         cadquery_code=generated.cadquery_code,
-        step_file_path=str(step_path.relative_to(Path(__file__).resolve().parent.parent)),
+        step_file_path=step_file_location,
+        created_at=created_at,
         preview_metadata=json.dumps(
             {
                 **preview,
                 "tree": components_to_tree(generated.components),
                 "summary": generated.summary,
                 "usedFallback": generated.used_fallback,
+                "job_metadata": {
+                    "prompt": prompt,
+                    "datetime": created_at.isoformat(),
+                    "model_used": generated.model_used,
+                    "step_file_location": step_file_location,
+                    "animation_metadata": None,
+                    "code": generated.cadquery_code,
+                },
                 "previewSvgUrl": (
                     None
                     if preview_path is not None
@@ -127,12 +147,26 @@ def list_objects(session: Session = Depends(get_session)) -> list[ObjectSummary]
         component_count = session.exec(
             select(CADComponent).where(CADComponent.cad_object_id == cad_object.id)
         ).all()
+        preview = json.loads(cad_object.preview_metadata)
+        stored_plan = session.exec(
+            select(CADAnimationPlan).where(CADAnimationPlan.cad_object_id == cad_object.id)
+        ).first()
+        metadata = _job_metadata_payload(
+            cad_object=cad_object,
+            stored_plan=stored_plan,
+            preview=preview,
+        )
         summaries.append(
             ObjectSummary(
                 id=cad_object.id,
                 prompt=cad_object.prompt,
                 created_at=cad_object.created_at,
                 step_file_url=f"{settings.api_prefix}/objects/{cad_object.id}/step",
+                step_file_location=metadata["step_file_location"],
+                model_used=metadata["model_used"],
+                has_animation=stored_plan is not None,
+                used_fallback=bool(preview.get("usedFallback")),
+                summary=preview.get("summary"),
                 component_count=len(component_count),
             )
         )
@@ -212,6 +246,14 @@ def generate_animation(
         stored_plan.plan_json = animation_plan.model_dump_json()
         stored_plan.updated_at = utc_now()
         session.add(stored_plan)
+    preview["job_metadata"] = _job_metadata_payload(
+        cad_object=cad_object,
+        stored_plan=stored_plan,
+        preview=preview,
+        animation_model_used=animation.model_used,
+    )
+    cad_object.preview_metadata = json.dumps(preview)
+    session.add(cad_object)
     session.commit()
 
     return animation_plan
@@ -262,6 +304,13 @@ def _build_response(session: Session, cad_object: CADObject, components: list[CA
     return GenerateResponse(
         id=cad_object.id,
         prompt=cad_object.prompt,
+        metadata=JobMetadata(
+            **_job_metadata_payload(
+                cad_object=cad_object,
+                stored_plan=stored_plan,
+                preview=preview,
+            )
+        ),
         cadquery_code=cad_object.cadquery_code,
         step_file_url=f"{settings.api_prefix}/objects/{cad_object.id}/step",
         preview=preview,
@@ -269,3 +318,45 @@ def _build_response(session: Session, cad_object: CADObject, components: list[CA
         animation_plan=(AnimationPlan.model_validate_json(stored_plan.plan_json) if stored_plan else None),
         created_at=cad_object.created_at,
     )
+
+
+def _job_metadata_payload(
+    cad_object: CADObject,
+    stored_plan: CADAnimationPlan | None,
+    preview: dict[str, Any],
+    animation_model_used: str | None = None,
+) -> dict[str, Any]:
+    stored_metadata = preview.get("job_metadata") if isinstance(preview.get("job_metadata"), dict) else {}
+    stored_animation_metadata = (
+        stored_metadata.get("animation_metadata")
+        if isinstance(stored_metadata.get("animation_metadata"), dict)
+        else {}
+    )
+    animation_model = animation_model_used or stored_animation_metadata.get("model_used")
+    return {
+        "prompt": cad_object.prompt,
+        "datetime": cad_object.created_at.isoformat(),
+        "model_used": str(stored_metadata.get("model_used") or settings.openai_model),
+        "step_file_location": cad_object.step_file_path,
+        "animation_metadata": _animation_metadata_payload(stored_plan, animation_model),
+        "code": cad_object.cadquery_code,
+    }
+
+
+def _animation_metadata_payload(
+    stored_plan: CADAnimationPlan | None,
+    model_used: str | None = None,
+) -> dict[str, Any] | None:
+    if stored_plan is None:
+        return None
+    existing_metadata = None
+    try:
+        existing_metadata = json.loads(stored_plan.plan_json)
+    except json.JSONDecodeError:
+        existing_metadata = {"raw_plan": stored_plan.plan_json}
+    return {
+        "prompt": stored_plan.prompt,
+        "datetime": stored_plan.updated_at.isoformat(),
+        "model_used": model_used,
+        "plan": existing_metadata,
+    }

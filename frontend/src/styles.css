@@ -70,9 +70,35 @@ button {
 
 .hero-grid,
 .workspace-shell,
+.app-tabs,
 .detail-grid {
   position: relative;
   z-index: 1;
+}
+
+.app-tabs {
+  display: inline-flex;
+  width: fit-content;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(18px);
+}
+
+.app-tabs button {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 18px;
+  background: transparent;
+  color: #cbd5e1;
+  font-weight: 700;
+}
+
+.app-tabs button.active {
+  background: linear-gradient(120deg, #f97316, #fbbf24);
+  color: #111827;
 }
 
 .hero-grid {
@@ -180,11 +206,13 @@ button {
 }
 
 .history-panel,
+.dashboard-panel,
 .tree-panel,
 .viewer-panel,
 .metrics-panel,
 .animation-panel,
 .selection-panel,
+.metadata-panel,
 .code-panel,
 .detail-panel {
   padding-bottom: 24px;
@@ -262,6 +290,7 @@ button {
 .metric-cards article,
 .summary-box,
 .selection-details,
+.metadata-grid,
 .empty-detail {
   margin: 0 24px;
   padding: 16px 18px;
@@ -439,6 +468,7 @@ button {
 }
 
 .selection-details pre,
+.metadata-json,
 .code-panel pre {
   overflow: auto;
   background: rgba(2, 8, 23, 0.88);
@@ -450,6 +480,139 @@ button {
 .code-panel pre {
   margin: 18px 24px 0;
   min-height: 300px;
+}
+
+.metadata-grid {
+  margin-top: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.metadata-grid p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #cbd5e1;
+}
+
+.metadata-json {
+  margin: 18px 24px 0;
+  max-height: 280px;
+}
+
+.dashboard-stats {
+  padding: 18px 24px 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 14px;
+}
+
+.dashboard-stats article,
+.latest-job {
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.dashboard-stats span,
+.latest-job span,
+.latest-job small,
+.jobs-table td span {
+  color: #94a3b8;
+}
+
+.dashboard-stats strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.6rem;
+}
+
+.latest-job {
+  margin: 18px 24px 0;
+  display: grid;
+  gap: 6px;
+}
+
+.latest-job strong {
+  overflow-wrap: anywhere;
+}
+
+.jobs-table-shell {
+  margin: 18px 24px 0;
+  overflow: auto;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 18px;
+  background: rgba(2, 8, 23, 0.5);
+}
+
+.jobs-table {
+  width: 100%;
+  min-width: 960px;
+  border-collapse: collapse;
+}
+
+.jobs-table th,
+.jobs-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  text-align: left;
+  vertical-align: top;
+}
+
+.jobs-table th {
+  color: #cbd5e1;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: rgba(15, 23, 42, 0.86);
+}
+
+.jobs-table tr.active td {
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.jobs-table td:first-child {
+  width: 30%;
+}
+
+.jobs-table td strong,
+.jobs-table td span {
+  display: block;
+}
+
+.jobs-table a {
+  color: #fbbf24;
+  overflow-wrap: anywhere;
+}
+
+.jobs-table button {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: rgba(251, 191, 36, 0.16);
+  color: #fde68a;
+  font-weight: 700;
+}
+
+.jobs-table button:disabled,
+.refresh-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.job-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.job-tags span {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(30, 41, 59, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  color: #cbd5e1;
+  font-size: 0.82rem;
 }
 
 .empty-state {
@@ -471,6 +634,10 @@ button {
   .hero-grid,
   .workspace-shell {
     display: block;
+  }
+
+  .dashboard-stats {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
   }
 
   .history-panel {
@@ -496,9 +663,14 @@ button {
   .history-list,
   .tree-list,
   .metric-cards,
+  .dashboard-stats,
+  .latest-job,
+  .jobs-table-shell,
   .viewer-shell,
   .code-panel pre,
   .selection-details,
+  .metadata-grid,
+  .metadata-json,
   .animation-controls,
   .summary-box,
   .metric-cards article,
