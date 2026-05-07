@@ -91,8 +91,10 @@ export function StepViewer({
   const baseGroupTransformRef = useRef<TransformSnapshot | null>(null);
   const componentsRef = useRef<ComponentNode[]>(components);
   const animationPlanRef = useRef<AnimationPlan | null>(animationPlan);
+  const animationElapsedOffsetRef = useRef(0);
   const animationStartedAtRef = useRef<number | null>(animationPlan ? performance.now() / 1000 : null);
   const clickStartRef = useRef<{ x: number; y: number } | null>(null);
+  const [isAnimationPlaying, setIsAnimationPlaying] = useState(Boolean(animationPlan));
   const [status, setStatus] = useState("Loading STEP preview...");
 
   useEffect(() => {
@@ -101,8 +103,31 @@ export function StepViewer({
 
   useEffect(() => {
     animationPlanRef.current = animationPlan;
+    animationElapsedOffsetRef.current = 0;
     animationStartedAtRef.current = animationPlan ? performance.now() / 1000 : null;
+    setIsAnimationPlaying(Boolean(animationPlan));
   }, [animationPlan]);
+
+  useEffect(() => {
+    if (!animationPlan) {
+      animationElapsedOffsetRef.current = 0;
+      animationStartedAtRef.current = null;
+      return;
+    }
+
+    const now = performance.now() / 1000;
+    if (isAnimationPlaying) {
+      if (animationStartedAtRef.current === null) {
+        animationStartedAtRef.current = now;
+      }
+      return;
+    }
+
+    if (animationStartedAtRef.current !== null) {
+      animationElapsedOffsetRef.current += now - animationStartedAtRef.current;
+      animationStartedAtRef.current = null;
+    }
+  }, [animationPlan, isAnimationPlaying]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -199,12 +224,13 @@ export function StepViewer({
         return;
       }
       applyAnimationFrame(
-        animationPlanRef.current,
+        isAnimationPlaying ? animationPlanRef.current : null,
         meshRecordsRef.current,
         contentGroupRef.current,
         baseGroupTransformRef.current,
         componentsRef.current,
         animationStartedAtRef.current,
+        animationElapsedOffsetRef.current,
       );
       controls.update();
       renderer.render(scene, camera);
@@ -304,6 +330,15 @@ export function StepViewer({
           <div className="eyebrow">STEP Preview</div>
           <h2>Interactive renderer</h2>
         </div>
+        {animationPlan ? (
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={() => setIsAnimationPlaying((value) => !value)}
+          >
+            {isAnimationPlaying ? "Stop animation" : "Start animation"}
+          </button>
+        ) : null}
       </div>
       <div className="viewer-shell">
         <div ref={hostRef} className="step-viewer-canvas" />
@@ -525,6 +560,7 @@ function applyAnimationFrame(
   baseGroupTransform: TransformSnapshot | null,
   components: ComponentNode[],
   animationStartedAt: number | null,
+  animationElapsedOffset: number,
 ) {
   resetAnimationTargets(meshRecords, contentGroup, baseGroupTransform);
 
@@ -534,7 +570,7 @@ function applyAnimationFrame(
 
   const now = performance.now() / 1000;
   const duration = Math.max(animationPlan.duration, 0.001);
-  const elapsed = Math.max(now - animationStartedAt, 0);
+  const elapsed = Math.max(animationElapsedOffset + (now - animationStartedAt), 0);
   const time = animationPlan.loop ? elapsed % duration : Math.min(elapsed, duration);
 
   for (const track of animationPlan.tracks) {

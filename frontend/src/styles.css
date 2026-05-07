@@ -205,6 +205,10 @@ button {
   padding: 24px 24px 0;
 }
 
+.panel-header .ghost-button {
+  flex: 0 0 auto;
+}
+
 .history-panel,
 .dashboard-panel,
 .tree-panel,
