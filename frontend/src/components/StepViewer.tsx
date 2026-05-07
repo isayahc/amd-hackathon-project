@@ -99,6 +99,7 @@ export function StepViewer({
   const animationPlanRef = useRef<AnimationPlan | null>(animationPlan);
   const animationElapsedOffsetRef = useRef(0);
   const animationStartedAtRef = useRef<number | null>(animationPlan ? performance.now() / 1000 : null);
+  const isAnimationPlayingRef = useRef(Boolean(animationPlan));
   const clickStartRef = useRef<{ x: number; y: number } | null>(null);
   const [isAnimationPlaying, setIsAnimationPlaying] = useState(Boolean(animationPlan));
   const [status, setStatus] = useState("Loading STEP preview...");
@@ -111,8 +112,13 @@ export function StepViewer({
     animationPlanRef.current = animationPlan;
     animationElapsedOffsetRef.current = 0;
     animationStartedAtRef.current = animationPlan ? performance.now() / 1000 : null;
+    isAnimationPlayingRef.current = Boolean(animationPlan);
     setIsAnimationPlaying(Boolean(animationPlan));
   }, [animationPlan]);
+
+  useEffect(() => {
+    isAnimationPlayingRef.current = isAnimationPlaying;
+  }, [isAnimationPlaying]);
 
   useEffect(() => {
     if (!animationPlan) {
@@ -230,7 +236,7 @@ export function StepViewer({
         return;
       }
       applyAnimationFrame(
-        isAnimationPlaying ? animationPlanRef.current : null,
+        isAnimationPlayingRef.current ? animationPlanRef.current : null,
         meshRecordsRef.current,
         contentGroupRef.current,
         baseGroupTransformRef.current,
