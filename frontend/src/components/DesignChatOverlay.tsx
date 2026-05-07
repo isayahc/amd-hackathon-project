@@ -15,6 +15,10 @@ type DesignChatOverlayProps = {
   onOpenConversation: (id: number) => void;
 };
 
+function formatSessionId(sessionUuid: string): string {
+  return sessionUuid.slice(0, 8);
+}
+
 export function DesignChatOverlay({
   messages,
   historyItems,
@@ -95,7 +99,9 @@ export function DesignChatOverlay({
                 disabled={busy}
               >
                 <strong>{item.id === activeConversationId ? "Current session" : "Saved conversation"}</strong>
-                <span>{new Date(item.created_at).toLocaleString()}</span>
+                <span>
+                  Chat {formatSessionId(item.session_uuid)} · v{item.version} · {new Date(item.created_at).toLocaleString()}
+                </span>
               </button>
             ))}
           </div>

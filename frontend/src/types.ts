@@ -31,6 +31,14 @@ export type ObjectSummary = {
   component_count: number;
 };
 
+export type ShowroomPlacement = {
+  placement_id: string;
+  object: ObjectSummary;
+  x: number;
+  y: number;
+  z: number;
+};
+
 export type PreviewPayload = {
   bbox?: { x: number; y: number; z: number };
   volume?: number | null;

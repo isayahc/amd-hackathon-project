@@ -1,5 +1,22 @@
 import type { GeneratedObject, ObjectSummary } from "../types.js";
 
+function getObjectLabel(prompt: string): string {
+  const firstLine = prompt
+    .split("\n")
+    .map((line) => line.trim())
+    .find(Boolean);
+
+  if (!firstLine) {
+    return "Untitled object";
+  }
+
+  return firstLine;
+}
+
+function formatSessionId(sessionUuid: string): string {
+  return sessionUuid.slice(0, 8);
+}
+
 type JobsDashboardProps = {
   jobs: ObjectSummary[];
   activeId: number | null;
@@ -28,8 +45,8 @@ export function JobsDashboard({
     <section className="dashboard-panel panel">
       <div className="panel-header">
         <div>
-          <div className="eyebrow">Dashboard</div>
-          <h2>Past jobs</h2>
+          <div className="eyebrow">Objects</div>
+          <h2>Saved objects and their latest versions</h2>
         </div>
         <button type="button" className="ghost-button refresh-button" onClick={onRefresh} disabled={busy}>
           {busy ? "Refreshing..." : "Refresh"}
@@ -38,7 +55,7 @@ export function JobsDashboard({
 
       <div className="dashboard-stats">
         <article>
-          <span>Saved Jobs</span>
+          <span>Objects</span>
           <strong>{jobs.length}</strong>
         </article>
         <article>
@@ -58,8 +75,10 @@ export function JobsDashboard({
       {latestJob ? (
         <div className="latest-job">
           <span>Latest</span>
-          <strong>{latestJob.prompt}</strong>
-          <small>{new Date(latestJob.created_at).toLocaleString()}</small>
+          <strong>{getObjectLabel(latestJob.prompt)}</strong>
+          <small>
+            Chat {formatSessionId(latestJob.session_uuid)} · v{latestJob.version} · {new Date(latestJob.created_at).toLocaleString()}
+          </small>
         </div>
       ) : null}
 
@@ -71,8 +90,8 @@ export function JobsDashboard({
             <table className="jobs-table">
               <thead>
                 <tr>
-                  <th>Prompt</th>
-                  <th>Created</th>
+                  <th>Object</th>
+                  <th>Latest Version</th>
                   <th>Model</th>
                   <th>STEP</th>
                   <th>Status</th>
@@ -83,10 +102,14 @@ export function JobsDashboard({
                 {jobs.map((job) => (
                   <tr key={job.id} className={job.id === activeId ? "active" : undefined}>
                     <td>
-                      <strong>{job.prompt}</strong>
+                      <strong>{getObjectLabel(job.prompt)}</strong>
+                      <span>Chat {formatSessionId(job.session_uuid)}</span>
                       <span>{job.summary ?? "No summary saved."}</span>
                     </td>
-                    <td>{new Date(job.created_at).toLocaleString()}</td>
+                    <td>
+                      <strong>v{job.version}</strong>
+                      <span>{new Date(job.created_at).toLocaleString()}</span>
+                    </td>
                     <td>{job.model_used}</td>
                     <td>
                       <a href={job.step_file_url} target="_blank" rel="noreferrer">
@@ -121,11 +144,11 @@ export function JobsDashboard({
           <div className="panel-header">
             <div>
               <div className="eyebrow">Past Chats</div>
-              <h2>{previewJob ? previewJob.prompt : "Select a saved job"}</h2>
+              <h2>{previewJob ? getObjectLabel(previewJob.prompt) : "Select a saved object"}</h2>
             </div>
             {previewJob ? (
               <button type="button" onClick={() => onOpenJob(previewJob.id)} disabled={busy}>
-                Open version
+                Open latest
               </button>
             ) : null}
           </div>
@@ -133,6 +156,8 @@ export function JobsDashboard({
             {previewJob ? (
               <>
                 <div className="past-chat-meta">
+                  <span>Chat {formatSessionId(previewJob.session_uuid)}</span>
+                  <span>v{previewJob.version}</span>
                   <span>{new Date(previewJob.created_at).toLocaleString()}</span>
                   <span>{previewJob.components.length} components</span>
                 </div>

@@ -4,6 +4,10 @@ import { generateAnimation } from "../api.js";
 import type { AnimationPlan, ComponentNode, GeneratedObject } from "../types.js";
 import { StepViewer } from "./StepViewer.js";
 
+function formatSessionId(sessionUuid: string): string {
+  return sessionUuid.slice(0, 8);
+}
+
 type DetailPanelProps = {
   objectData: GeneratedObject | null;
   selectedComponent: ComponentNode | null;
@@ -218,6 +222,12 @@ export function DetailPanel({
           </p>
           <p>
             <strong>Datetime:</strong> {new Date(jobMetadata.datetime).toLocaleString()}
+          </p>
+          <p>
+            <strong>Chat ID:</strong> {jobMetadata.session_uuid} ({formatSessionId(jobMetadata.session_uuid)})
+          </p>
+          <p>
+            <strong>Version:</strong> v{jobMetadata.version}
           </p>
           <p>
             <strong>Model:</strong> {jobMetadata.model_used}

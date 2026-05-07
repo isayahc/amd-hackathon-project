@@ -12,6 +12,32 @@ export async function listObjects(): Promise<ObjectSummary[]> {
   return response.json();
 }
 
+export async function listObjectVersions(): Promise<ObjectSummary[]> {
+  const response = await fetch("/api/objects/versions", { headers: JSON_HEADERS });
+  if (!response.ok) {
+    throw new Error("Failed to fetch object versions.");
+  }
+  return response.json();
+}
+
+export async function listLatestObjects(): Promise<ObjectSummary[]> {
+  const response = await fetch("/api/objects/latest", { headers: JSON_HEADERS });
+  if (!response.ok) {
+    throw new Error("Failed to fetch latest objects.");
+  }
+  return response.json();
+}
+
+export async function listObjectsBySession(sessionUuid: string): Promise<ObjectSummary[]> {
+  const response = await fetch(`/api/sessions/${encodeURIComponent(sessionUuid)}/objects`, {
+    headers: JSON_HEADERS,
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch session objects.");
+  }
+  return response.json();
+}
+
 export async function getObject(id: number): Promise<GeneratedObject> {
   const response = await fetch(`/api/objects/${id}`, { headers: JSON_HEADERS });
   if (!response.ok) {

@@ -259,6 +259,41 @@ def _persist_generated_object(
 @router.get("/objects", response_model=list[ObjectSummary])
 def list_objects(session: Session = Depends(get_session)) -> list[ObjectSummary]:
     objects = session.exec(select(CADObject).order_by(CADObject.created_at.desc())).all()
+    return _object_summaries(session, objects)
+
+
+@router.get("/objects/versions", response_model=list[ObjectSummary])
+def list_object_versions(session: Session = Depends(get_session)) -> list[ObjectSummary]:
+    objects = session.exec(select(CADObject).order_by(CADObject.created_at.desc())).all()
+    return _object_summaries(session, objects)
+
+
+@router.get("/objects/latest", response_model=list[ObjectSummary])
+def list_latest_objects(session: Session = Depends(get_session)) -> list[ObjectSummary]:
+    objects = session.exec(select(CADObject).order_by(CADObject.created_at.desc())).all()
+    latest_by_session: dict[str, CADObject] = {}
+    for cad_object in objects:
+        if cad_object.session_uuid in latest_by_session:
+            continue
+        latest_by_session[cad_object.session_uuid] = cad_object
+
+    return _object_summaries(session, list(latest_by_session.values()))
+
+
+@router.get("/sessions/{session_uuid}/objects", response_model=list[ObjectSummary])
+def list_objects_by_session(
+    session_uuid: str,
+    session: Session = Depends(get_session),
+) -> list[ObjectSummary]:
+    objects = session.exec(
+        select(CADObject)
+        .where(CADObject.session_uuid == session_uuid)
+        .order_by(CADObject.version.desc(), CADObject.created_at.desc())
+    ).all()
+    return _object_summaries(session, objects)
+
+
+def _object_summaries(session: Session, objects: list[CADObject]) -> list[ObjectSummary]:
     summaries: list[ObjectSummary] = []
     for cad_object in objects:
         component_count = session.exec(

@@ -16,6 +16,9 @@ type StepViewerProps = {
   onSelectNode: (nodeId: string) => void;
   chatOverlay?: ReactNode;
   versionOverlay?: ReactNode;
+  showHeader?: boolean;
+  showComponentTree?: boolean;
+  embedded?: boolean;
 };
 
 type OcctNode = {
@@ -84,6 +87,9 @@ export function StepViewer({
   onSelectNode,
   chatOverlay,
   versionOverlay,
+  showHeader = true,
+  showComponentTree = true,
+  embedded = false,
 }: StepViewerProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const meshRecordsRef = useRef<MeshRecord[]>([]);
@@ -324,32 +330,36 @@ export function StepViewer({
   }, [selectedComponent, components]);
 
   return (
-    <section className="panel viewer-panel">
-      <div className="panel-header">
-        <div>
-          <div className="eyebrow">STEP Preview</div>
-          <h2>Interactive renderer</h2>
+    <section className={embedded ? "viewer-panel viewer-panel-embedded" : "panel viewer-panel"}>
+      {showHeader ? (
+        <div className="panel-header">
+          <div>
+            <div className="eyebrow">STEP Preview</div>
+            <h2>Interactive renderer</h2>
+          </div>
+          {animationPlan ? (
+            <button
+              type="button"
+              className="ghost-button"
+              onClick={() => setIsAnimationPlaying((value) => !value)}
+            >
+              {isAnimationPlaying ? "Stop animation" : "Start animation"}
+            </button>
+          ) : null}
         </div>
-        {animationPlan ? (
-          <button
-            type="button"
-            className="ghost-button"
-            onClick={() => setIsAnimationPlaying((value) => !value)}
-          >
-            {isAnimationPlaying ? "Stop animation" : "Start animation"}
-          </button>
-        ) : null}
-      </div>
-      <div className="viewer-shell">
+      ) : null}
+      <div className={embedded ? "viewer-shell viewer-shell-embedded" : "viewer-shell"}>
         <div ref={hostRef} className="step-viewer-canvas" />
-        <div className="viewer-overlay viewer-overlay-tree">
-          <ComponentTree
-            components={components}
-            activeNodeId={activeNodeId}
-            onSelect={onSelectNode}
-            overlay
-          />
-        </div>
+        {showComponentTree && components.length > 0 ? (
+          <div className="viewer-overlay viewer-overlay-tree">
+            <ComponentTree
+              components={components}
+              activeNodeId={activeNodeId}
+              onSelect={onSelectNode}
+              overlay
+            />
+          </div>
+        ) : null}
         {versionOverlay || chatOverlay ? (
           <div className="viewer-overlay viewer-overlay-right-rail">
             {versionOverlay ? <div className="viewer-overlay-versions">{versionOverlay}</div> : null}

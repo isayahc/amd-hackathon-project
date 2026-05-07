@@ -9,6 +9,10 @@ type VersionSwitcherOverlayProps = {
   onSelect: (id: number) => void;
 };
 
+function formatSessionId(sessionUuid: string): string {
+  return sessionUuid.slice(0, 8);
+}
+
 function getPromptPreview(prompt: string): string {
   const firstLine = prompt
     .split("\n")
@@ -47,7 +51,7 @@ export function VersionSwitcherOverlay({ items, activeId, busy, onSelect }: Vers
           <span className="eyebrow">Current Version</span>
           <strong>{getPromptPreview(activeItem.prompt)}</strong>
           <small>
-            {new Date(activeItem.created_at).toLocaleString()} · {activeItem.component_count} components
+            Chat {formatSessionId(activeItem.session_uuid)} · v{activeItem.version} · {new Date(activeItem.created_at).toLocaleString()} · {activeItem.component_count} components
           </small>
         </span>
         <span className="version-overlay-toggle-label">{open ? "Hide" : "Switch"}</span>
@@ -72,7 +76,7 @@ export function VersionSwitcherOverlay({ items, activeId, busy, onSelect }: Vers
               </span>
               <span>{getPromptPreview(item.prompt)}</span>
               <small>
-                {new Date(item.created_at).toLocaleString()} · {item.component_count} components
+                Chat {formatSessionId(item.session_uuid)} · v{item.version} · {new Date(item.created_at).toLocaleString()} · {item.component_count} components
                 {item.used_fallback ? " · fallback" : ""}
               </small>
             </button>

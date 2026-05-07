@@ -1,17 +1,50 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { generateObject, getObject, listObjects, modifyObject } from "./api.js";
+import {
+  generateObject,
+  getObject,
+  listLatestObjects,
+  listObjectsBySession,
+  modifyObject,
+} from "./api.js";
 import { DesignChatOverlay } from "./components/DesignChatOverlay.js";
 import { DetailPanel } from "./components/DetailPanel.js";
 import { JobsDashboard } from "./components/JobsDashboard.js";
+import { ShowroomPanel } from "./components/ShowroomPanel.js";
 import { VersionSwitcherOverlay } from "./components/VersionSwitcherOverlay.js";
-import type { ChatMessage, ComponentNode, GeneratedObject, ObjectSummary } from "./types.js";
+import type {
+  ChatMessage,
+  ComponentNode,
+  GeneratedObject,
+  ObjectSummary,
+  ShowroomPlacement,
+} from "./types.js";
 
-type ActiveView = "studio" | "dashboard";
+type ActiveView = "studio" | "showroom" | "versions";
 type ChatPane = "current" | "archive";
 
+function toObjectSummary(object: GeneratedObject): ObjectSummary {
+  return {
+    id: object.id,
+    session_uuid: object.session_uuid,
+    object_uuid: object.object_uuid,
+    version: object.version,
+    prompt: object.prompt,
+    created_at: object.created_at,
+    step_file_url: object.step_file_url,
+    step_file_location: object.metadata.step_file_location,
+    model_used: object.metadata.model_used,
+    has_animation: Boolean(object.animation_plan),
+    used_fallback: Boolean(object.preview.usedFallback),
+    summary: object.preview.summary ?? null,
+    component_count: object.components.length,
+  };
+}
+
 export default function App() {
-  const [history, setHistory] = useState<ObjectSummary[]>([]);
+  const [latestObjects, setLatestObjects] = useState<ObjectSummary[]>([]);
+  const [sessionObjects, setSessionObjects] = useState<ObjectSummary[]>([]);
+  const [showroomPlacements, setShowroomPlacements] = useState<ShowroomPlacement[]>([]);
   const [currentObject, setCurrentObject] = useState<GeneratedObject | null>(null);
   const [previewObject, setPreviewObject] = useState<GeneratedObject | null>(null);
   const [chatPane, setChatPane] = useState<ChatPane>("current");
@@ -23,24 +56,40 @@ export default function App() {
 
   const displayedObject = chatPane === "archive" ? previewObject ?? currentObject : currentObject;
   const submissionTarget = chatPane === "archive" ? previewObject ?? currentObject : currentObject;
+  const studioHistory = currentObject ? sessionObjects : latestObjects;
+  const showroomObjects = useMemo(() => {
+    if (!displayedObject) {
+      return latestObjects;
+    }
+
+    if (latestObjects.some((object) => object.id === displayedObject.id)) {
+      return latestObjects;
+    }
+
+    return [toObjectSummary(displayedObject), ...latestObjects];
+  }, [displayedObject, latestObjects]);
 
   useEffect(() => {
-    void refreshHistory();
+    void refreshData();
   }, []);
 
-  async function refreshHistory(selectedId?: number) {
+  async function refreshData(selectedId?: number) {
     setBusy(true);
     try {
-      const items = await listObjects();
-      setHistory(items);
+      const latest = await listLatestObjects();
+      setLatestObjects(latest);
       if (selectedId) {
         const targetId = selectedId;
         const nextObject = await getObject(targetId);
+        const sessionItems = await listObjectsBySession(nextObject.session_uuid);
         setCurrentObject(nextObject);
         setPreviewObject(nextObject);
+        setSessionObjects(sessionItems);
         setChatPane("current");
         setChatMessages(nextObject.chat_messages);
         setSelectedNodeId(nextObject.components[0]?.node_id ?? null);
+      } else if (!currentObject) {
+        setSessionObjects([]);
       }
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Unknown error.");
@@ -56,14 +105,18 @@ export default function App() {
       const nextObject = submissionTarget
         ? await modifyObject(submissionTarget.id, prompt, imageFile)
         : await generateObject(prompt, imageFile);
+      const [latest, sessionItems] = await Promise.all([
+        listLatestObjects(),
+        listObjectsBySession(nextObject.session_uuid),
+      ]);
       setCurrentObject(nextObject);
       setPreviewObject(nextObject);
+      setLatestObjects(latest);
+      setSessionObjects(sessionItems);
       setChatPane("current");
       setChatMessages(nextObject.chat_messages);
       setSelectedNodeId(nextObject.components[0]?.node_id ?? null);
       setActiveView("studio");
-      const items = await listObjects();
-      setHistory(items);
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Unknown error.");
       setChatMessages((messages) => [
@@ -84,8 +137,10 @@ export default function App() {
     setError(null);
     try {
       const nextObject = await getObject(id);
+      const sessionItems = await listObjectsBySession(nextObject.session_uuid);
       setCurrentObject(nextObject);
       setPreviewObject(nextObject);
+      setSessionObjects(sessionItems);
       setChatPane("current");
       setSelectedNodeId(nextObject.components[0]?.node_id ?? null);
       setChatMessages(nextObject.chat_messages);
@@ -127,6 +182,7 @@ export default function App() {
   function handleNewSession() {
     setCurrentObject(null);
     setPreviewObject(null);
+    setSessionObjects([]);
     setChatPane("current");
     setSelectedNodeId(null);
     setChatMessages([]);
@@ -152,10 +208,78 @@ export default function App() {
     }
   }
 
+  function handlePlaceShowroomObject(
+    object: ObjectSummary,
+    position?: { x: number; z: number },
+    placementId?: string,
+  ) {
+    setShowroomPlacements((placements) => {
+      const fallbackPosition = {
+        x: (placements.length % 3) * 42 - 42,
+        z: 14 + Math.floor(placements.length / 3) * 34,
+      };
+      const nextPlacement: ShowroomPlacement = {
+        placement_id: placementId ?? crypto.randomUUID(),
+        object,
+        x: position?.x ?? fallbackPosition.x,
+        y: 0,
+        z: position?.z ?? fallbackPosition.z,
+      };
+
+      if (placementId) {
+        return placements.map((placement) =>
+          placement.placement_id === placementId
+            ? {
+                ...placement,
+                object,
+                x: position?.x ?? placement.x,
+                y: placement.y,
+                z: position?.z ?? placement.z,
+              }
+            : placement,
+        );
+      }
+
+      return [...placements, nextPlacement];
+    });
+  }
+
+  function handleMoveShowroomObject(placementId: string, position: { x: number; z: number }) {
+    setShowroomPlacements((placements) => {
+      return placements.map((placement) =>
+        placement.placement_id === placementId
+          ? { ...placement, x: position.x, z: position.z }
+          : placement,
+      );
+    });
+  }
+
+  function handleUpdateShowroomPlacementY(placementId: string, y: number) {
+    setShowroomPlacements((placements) => {
+      return placements.map((placement) =>
+        placement.placement_id === placementId ? { ...placement, y } : placement,
+      );
+    });
+  }
+
+  function handleUpdateShowroomPlacementVersion(placementId: string, object: ObjectSummary) {
+    setShowroomPlacements((placements) => {
+      return placements.map((placement) =>
+        placement.placement_id === placementId ? { ...placement, object } : placement,
+      );
+    });
+  }
+
+  function handleRemoveShowroomObject(placementId: string) {
+    setShowroomPlacements((placements) => {
+      return placements.filter((placement) => placement.placement_id !== placementId);
+    });
+  }
+
   const chatOverlay = (
     <DesignChatOverlay
       messages={chatMessages}
-      historyItems={history}
+      historyItems={studioHistory}
       activeConversationId={currentObject?.id ?? null}
       activePane={chatPane}
       busy={busy}
@@ -169,7 +293,7 @@ export default function App() {
 
   const versionOverlay = displayedObject ? (
     <VersionSwitcherOverlay
-      items={history}
+      items={sessionObjects}
       activeId={displayedObject.id}
       busy={busy}
       onSelect={(id) => void handleSelectHistory(id)}
@@ -191,25 +315,45 @@ export default function App() {
         </button>
         <button
           type="button"
-          className={activeView === "dashboard" ? "active" : undefined}
-          onClick={() => setActiveView("dashboard")}
+          className={activeView === "showroom" ? "active" : undefined}
+          onClick={() => setActiveView("showroom")}
         >
-          Dashboard
+          Showroom
+        </button>
+        <button
+          type="button"
+          className={activeView === "versions" ? "active" : undefined}
+          onClick={() => setActiveView("versions")}
+        >
+          All Versions
         </button>
       </nav>
 
       {error ? <div className="error-banner">{error}</div> : null}
 
       <section className="workspace-shell">
-        {activeView === "dashboard" ? (
+        {activeView === "versions" ? (
           <JobsDashboard
-            jobs={history}
+            jobs={latestObjects}
             activeId={currentObject?.id ?? null}
             previewJob={previewObject}
             busy={busy}
-            onRefresh={() => void refreshHistory(currentObject?.id ?? undefined)}
+            onRefresh={() => void refreshData(currentObject?.id ?? undefined)}
             onOpenJob={handleSelectHistory}
             onPreviewJob={handlePreviewHistory}
+          />
+        ) : activeView === "showroom" ? (
+          <ShowroomPanel
+            objects={showroomObjects}
+            activeId={currentObject?.id ?? null}
+            busy={busy}
+            placements={showroomPlacements}
+            onOpenObject={handleSelectHistory}
+            onPlaceObject={handlePlaceShowroomObject}
+            onMoveObject={handleMoveShowroomObject}
+            onUpdatePlacementY={handleUpdateShowroomPlacementY}
+            onUpdatePlacementVersion={handleUpdateShowroomPlacementVersion}
+            onRemoveObject={handleRemoveShowroomObject}
           />
         ) : (
           <DetailPanel
