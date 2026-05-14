@@ -61,6 +61,26 @@ export type JobMetadata = {
   code: string;
 };
 
+export type LLMModelOption = {
+  provider: string;
+  model: string;
+  selected: boolean;
+};
+
+export type LLMProviderOption = {
+  provider: string;
+  configured: boolean;
+  selected: boolean;
+  authentication: string;
+  models: LLMModelOption[];
+};
+
+export type LLMListResponse = {
+  selected_provider: string;
+  selected_model: string | null;
+  providers: LLMProviderOption[];
+};
+
 export type GeneratedObject = {
   id: number;
   session_uuid: string;

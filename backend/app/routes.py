@@ -6,12 +6,13 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlmodel import Session, select
 from pydantic import BaseModel
 
 from app.config import get_settings
 from app.db import get_session
+from app.llm_config import list_llm_options
 from app.models import CADAnimationPlan, CADChatMessage, CADComponent, CADObject, utc_now
 from app.schemas import (
     AnimationPlan,
@@ -20,12 +21,15 @@ from app.schemas import (
     GenerateResponse,
     HealthResponse,
     JobMetadata,
+    LLMListResponse,
     ObjectDetail,
     ObjectSummary,
 )
 from app.services.animation_agent import AnimationAgentService
 from app.services.cadquery_agent import CadQueryAgentService
 from app.services.cadquery_parser import components_to_tree, generate_arbitrary_step
+from app.services.step_video_renderer import render_step_video
+from app.services.video_storage import store_video
 
 
 router = APIRouter()
@@ -41,6 +45,11 @@ class AnimationRequest(BaseModel):
 @router.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     return HealthResponse(status="ok")
+
+
+@router.get("/llms", response_model=LLMListResponse)
+def list_llms() -> LLMListResponse:
+    return LLMListResponse.model_validate(list_llm_options(settings))
 
 
 @router.post("/generate", response_model=GenerateResponse)
@@ -436,6 +445,59 @@ def download_preview_svg(object_id: int, session: Session = Depends(get_session)
     if not preview_path.exists():
         raise HTTPException(status_code=404, detail="Preview SVG not found")
     return FileResponse(path=preview_path, media_type="image/svg+xml", filename=preview_path.name)
+
+
+@router.get("/objects/{object_id}/video")
+def download_video(
+    object_id: int,
+    width: int = 960,
+    height: int = 720,
+    fps: int = 24,
+    duration: float = 4.0,
+    force: bool = False,
+    session: Session = Depends(get_session),
+) -> FileResponse:
+    cad_object = session.get(CADObject, object_id)
+    if not cad_object:
+        raise HTTPException(status_code=404, detail="Object not found")
+    step_path = Path(__file__).resolve().parent.parent / cad_object.step_file_path
+    if not step_path.exists():
+        raise HTTPException(status_code=404, detail="STEP file not found")
+    try:
+        video_path = render_step_video(
+            step_path=step_path,
+            output_dir=settings.video_dir,
+            object_id=object_id,
+            width=width,
+            height=height,
+            fps=fps,
+            duration=duration,
+            force=force,
+        )
+        stored_video = store_video(video_path, object_id=object_id, settings=settings)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Video render failed: {type(exc).__name__}: {exc}",
+        ) from exc
+    if stored_video.local_path is not None:
+        return FileResponse(
+            path=stored_video.local_path,
+            media_type="video/mp4",
+            filename=stored_video.local_path.name,
+        )
+    return RedirectResponse(stored_video.url)
+
+
+@router.get("/videos/{video_name}")
+def download_local_video(video_name: str) -> FileResponse:
+    video_path = (settings.video_dir / video_name).resolve()
+    video_root = settings.video_dir.resolve()
+    if video_root not in video_path.parents:
+        raise HTTPException(status_code=404, detail="Video not found")
+    if not video_path.exists() or not video_path.is_file():
+        raise HTTPException(status_code=404, detail="Video not found")
+    return FileResponse(path=video_path, media_type="video/mp4", filename=video_path.name)
 
 
 @router.get("/uploads/{upload_name}")

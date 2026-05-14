@@ -39,3 +39,4 @@ frontend/dist/
 .ruff_cache/
 
 build-with-ag2/
+storage/

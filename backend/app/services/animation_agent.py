@@ -8,6 +8,7 @@ from typing import Any
 import autogen
 
 from app.config import get_settings
+from app.llm_config import build_llm_config
 
 
 SYSTEM_PROMPT = """
@@ -68,8 +69,16 @@ class AnimationAgentService:
         preview: dict[str, Any],
         prompt: str | None = None,
     ) -> AnimationAgentOutput:
-        if not self.settings.openai_api_key:
-            return self._fallback(components, prompt=prompt, reason="missing OPENAI_API_KEY")
+        try:
+            # Build LLM config based on configured provider
+            llm_config = build_llm_config(self.settings)
+            model_used = (
+                self.settings.openai_model
+                if self.settings.llm_provider == "openai"
+                else self.settings.gemini_model
+            )
+        except (ValueError, AttributeError) as exc:
+            return self._fallback(components, prompt=prompt, reason=f"LLM configuration error: {str(exc)}")
 
         try:
             message = self._build_prompt(
@@ -78,14 +87,6 @@ class AnimationAgentService:
                 preview=preview,
                 prompt=prompt,
             )
-            llm_config = {
-                "config_list": [
-                    {
-                        "model": self.settings.openai_model,
-                        "api_key": self.settings.openai_api_key,
-                    }
-                ],
-            }
             agent = autogen.AssistantAgent(
                 name="animation_designer",
                 system_message=SYSTEM_PROMPT,
@@ -93,7 +94,7 @@ class AnimationAgentService:
             )
             response = agent.generate_reply(messages=[{"role": "user", "content": message}])
             payload = self._parse_response(response)
-            return self._normalize_payload(payload, components)
+            return self._normalize_payload(payload, components, model_used)
         except Exception as exc:
             return self._fallback(components, prompt=prompt, reason=str(exc))
 
@@ -137,6 +138,7 @@ class AnimationAgentService:
         self,
         payload: dict[str, Any],
         components: list[dict[str, Any]],
+        model_used: str = "unknown",
     ) -> AnimationAgentOutput:
         valid_node_ids = {"root", *(component["node_id"] for component in components)}
         duration = float(payload.get("duration") or 6.0)
@@ -181,7 +183,7 @@ class AnimationAgentService:
             duration=duration,
             loop=bool(payload.get("loop", True)),
             tracks=tracks,
-            model_used=self.settings.openai_model,
+            model_used=model_used,
         )
 
     def _normalize_vector(self, value: Any, default: list[float]) -> list[float]:

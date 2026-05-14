@@ -1,4 +1,4 @@
-import type { AnimationPlan, GeneratedObject, ObjectSummary } from "./types.js";
+import type { AnimationPlan, GeneratedObject, LLMListResponse, ObjectSummary } from "./types.js";
 
 const JSON_HEADERS = {
   Accept: "application/json",
@@ -8,6 +8,14 @@ export async function listObjects(): Promise<ObjectSummary[]> {
   const response = await fetch("/api/objects", { headers: JSON_HEADERS });
   if (!response.ok) {
     throw new Error("Failed to fetch object history.");
+  }
+  return response.json();
+}
+
+export async function listLlms(): Promise<LLMListResponse> {
+  const response = await fetch("/api/llms", { headers: JSON_HEADERS });
+  if (!response.ok) {
+    throw new Error("Failed to fetch LLM options.");
   }
   return response.json();
 }

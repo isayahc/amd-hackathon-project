@@ -55,3 +55,19 @@ class CADChatMessage(SQLModel, table=True):
     image_path: Optional[str] = None
     created_at: datetime = Field(default_factory=utc_now, nullable=False)
 
+
+class CLIJob(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    command: str = Field(index=True)
+    status: str = Field(default="running", index=True)
+    args_json: str = Field(default="{}", sa_column=Column(Text, nullable=False))
+    result_json: str = Field(default="{}", sa_column=Column(Text, nullable=False))
+    error_type: Optional[str] = Field(default=None, index=True)
+    error_message: Optional[str] = Field(default=None, sa_column=Column(Text, nullable=True))
+    traceback: Optional[str] = Field(default=None, sa_column=Column(Text, nullable=True))
+    cad_object_id: Optional[int] = Field(default=None, index=True)
+    object_uuid: Optional[str] = Field(default=None, index=True)
+    session_uuid: Optional[str] = Field(default=None, index=True)
+    output_path: Optional[str] = None
+    created_at: datetime = Field(default_factory=utc_now, nullable=False, index=True)
+    updated_at: datetime = Field(default_factory=utc_now, nullable=False)

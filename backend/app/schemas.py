@@ -35,6 +35,26 @@ class ChatMessage(BaseModel):
     image_url: str | None = None
 
 
+class LLMModelOption(BaseModel):
+    provider: str
+    model: str
+    selected: bool = False
+
+
+class LLMProviderOption(BaseModel):
+    provider: str
+    configured: bool
+    selected: bool = False
+    authentication: str = "none"
+    models: list[LLMModelOption]
+
+
+class LLMListResponse(BaseModel):
+    selected_provider: str
+    selected_model: str | None = None
+    providers: list[LLMProviderOption]
+
+
 class GenerateResponse(BaseModel):
     id: int
     session_uuid: str

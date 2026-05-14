@@ -1,0 +1,26 @@
+[
+    {
+        "model": "gpt-5-nano",
+        "api_key": "your-openai-key",
+        "api_type": "openai"
+    },
+    {
+        "model": "gemini-2.5-flash",
+        "api_key": "your-gemini-api-key",
+        "api_type": "google"
+    },
+    {
+        "model": "gemini-2.5-pro",
+        "project_id": "your-awesome-google-cloud-project-id",
+        "location": "us-west1",
+        "google_application_credentials": "your-google-service-account-key.json",
+        "api_type": "google"
+    },
+    {
+        "model": "gemini-3.1-pro-preview",
+        "api_key": "your-gemini-api-key",
+        "api_type": "google",
+        "thinking_level": "High",
+        "include_thoughts": true
+    }
+]

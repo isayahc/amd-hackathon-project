@@ -1,12 +1,15 @@
 Metadata-Version: 2.4
-Name: agentcad-backend
+Name: agentcad
 Version: 0.1.0
-Summary: AG2-powered CadQuery generation backend
+Summary: AG2-powered CadQuery generation app
 Requires-Python: >=3.11
 Requires-Dist: ag2[gemini,openai]>=0.9.0
 Requires-Dist: cadquery>=2.5.0
 Requires-Dist: fastapi>=0.115.0
+Requires-Dist: minio>=7.2.0
 Requires-Dist: pillow>=10.4.0
+Requires-Dist: psycopg[binary]>=3.2.0
+Requires-Dist: python-dotenv>=1.0.0
 Requires-Dist: python-multipart>=0.0.9
 Requires-Dist: sqlmodel>=0.0.22
 Requires-Dist: uvicorn[standard]>=0.30.0
