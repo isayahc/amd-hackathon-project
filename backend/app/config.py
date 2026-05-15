@@ -17,7 +17,8 @@ class Settings:
     app_name: str = "AgentCAD Backend"
     api_prefix: str = "/api"
     openai_api_key: str | None = None
-    openai_model: str = "gpt-4.1"
+    # openai_model: str = "gpt-4.1"
+    openai_model: str = "gpt-5.5-2026-04-23"
     sqlite_url: str = f"sqlite:///{(BASE_DIR / 'storage' / 'app.db').as_posix()}"
     export_dir: Path = BASE_DIR / "storage" / "steps"
     upload_dir: Path = BASE_DIR / "storage" / "uploads"
@@ -31,7 +32,7 @@ class Settings:
 def get_settings() -> Settings:
     settings = Settings(
         openai_api_key=os.getenv("OPENAI_API_KEY"),
-        openai_model=os.getenv("OPENAI_MODEL", "gpt-5.5"),
+        openai_model=os.getenv("OPENAI_MODEL", "gpt-5.5-2026-04-23"),
         agent_temperature=float(os.getenv("AGENT_TEMPERATURE", "0.1")),
     )
     settings.export_dir.mkdir(parents=True, exist_ok=True)

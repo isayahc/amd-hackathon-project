@@ -101,6 +101,7 @@ class CadQueryAgentService:
                 model_used=self.settings.openai_model,
             )
         except Exception as exc:
+            print(str(exc))
             return self._fallback(prompt, reason=str(exc))
 
     def _build_prompt(self, prompt: str, image_bytes: bytes | None, image_mime: str | None) -> str:
