@@ -6,7 +6,7 @@ import uuid
 from sqlalchemy import inspect, text
 from sqlmodel import Session, SQLModel, create_engine
 
-from app.config import get_settings
+from agentcad_backend.config import get_settings
 
 
 settings = get_settings()

@@ -15,6 +15,7 @@ backend/.env
 frontend/.env
 
 # Backend storage and runtime output
+backend/storage/
 backend/storage/app.db
 backend/storage/uploads/
 backend/storage/steps/
@@ -37,5 +38,10 @@ frontend/dist/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
 
 build-with-ag2/

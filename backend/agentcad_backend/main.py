@@ -3,9 +3,9 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import get_settings
-from app.db import init_db
-from app.routes import router
+from agentcad_backend.config import get_settings
+from agentcad_backend.db import init_db
+from agentcad_backend.routes import router
 
 
 settings = get_settings()

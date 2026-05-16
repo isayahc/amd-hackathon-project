@@ -8,8 +8,8 @@ from typing import Any
 
 import autogen
 
-from app.config import get_settings
-from app.services.cadquery_parser import execute_cadquery
+from agentcad_backend.config import get_settings
+from agentcad_backend.services.cadquery_parser import execute_cadquery
 
 
 SYSTEM_PROMPT = """

@@ -74,7 +74,7 @@ nohup env \
     PYTHON_BIN="$PYTHON_BIN" \
     BACKEND_HOST="$BACKEND_HOST" \
     BACKEND_PORT="$BACKEND_PORT" \
-    bash -lc 'cd "$BACKEND_DIR" && set -a && source .env && set +a && exec "$PYTHON_BIN" -m uvicorn app.main:app --host "$BACKEND_HOST" --port "$BACKEND_PORT"' \
+    bash -lc 'cd "$BACKEND_DIR" && set -a && source .env && set +a && exec "$PYTHON_BIN" -m uvicorn agentcad_backend.main:app --host "$BACKEND_HOST" --port "$BACKEND_PORT"' \
     >"$LOG_DIR/backend.log" 2>&1 < /dev/null &
 backend_pid=$!
 echo "$backend_pid" > "$BACKEND_PID_FILE"

@@ -7,7 +7,7 @@ from typing import Any
 
 import autogen
 
-from app.config import get_settings
+from agentcad_backend.config import get_settings
 
 
 SYSTEM_PROMPT = """

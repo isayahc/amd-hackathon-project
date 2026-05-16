@@ -10,10 +10,10 @@ from fastapi.responses import FileResponse
 from sqlmodel import Session, select
 from pydantic import BaseModel
 
-from app.config import get_settings
-from app.db import get_session
-from app.models import CADAnimationPlan, CADChatMessage, CADComponent, CADObject, utc_now
-from app.schemas import (
+from agentcad_backend.config import get_settings
+from agentcad_backend.db import get_session
+from agentcad_backend.models import CADAnimationPlan, CADChatMessage, CADComponent, CADObject, utc_now
+from agentcad_backend.schemas import (
     AnimationPlan,
     ChatMessage,
     ComponentNode,
@@ -23,9 +23,9 @@ from app.schemas import (
     ObjectDetail,
     ObjectSummary,
 )
-from app.services.animation_agent import AnimationAgentService
-from app.services.cadquery_agent import CadQueryAgentService
-from app.services.cadquery_parser import components_to_tree, generate_arbitrary_step
+from agentcad_backend.services.animation_agent import AnimationAgentService
+from agentcad_backend.services.cadquery_agent import CadQueryAgentService
+from agentcad_backend.services.cadquery_parser import components_to_tree, generate_arbitrary_step
 
 
 router = APIRouter()
