@@ -18,7 +18,13 @@ pip install -e ".[dev]"
 ## Run
 
 ```bash
-agentcad-backend --host 127.0.0.1 --port 8000
+agentcad-backend-server --host 127.0.0.1 --port 8000
+```
+
+The package also includes a small CLI entry point:
+
+```bash
+agentcad-backend-cli --help
 ```
 
 The package also exposes the ASGI app at:

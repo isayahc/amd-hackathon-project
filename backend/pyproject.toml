@@ -34,7 +34,8 @@ dependencies = [
 ]
 
 [project.scripts]
-agentcad-backend = "agentcad_backend.cli:main"
+agentcad-backend-server = "agentcad_backend.cli:server_main"
+agentcad-backend-cli = "agentcad_backend.cli:cli_main"
 
 [project.optional-dependencies]
 dev = [

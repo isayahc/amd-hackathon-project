@@ -5,7 +5,7 @@ import argparse
 import uvicorn
 
 
-def main() -> None:
+def server_main() -> None:
     parser = argparse.ArgumentParser(description="Run the AgentCAD FastAPI backend.")
     parser.add_argument("--host", default="127.0.0.1", help="Host to bind.")
     parser.add_argument("--port", default=8000, type=int, help="Port to bind.")
@@ -22,6 +22,15 @@ def main() -> None:
         port=args.port,
         reload=args.reload,
     )
+
+
+def cli_main() -> None:
+    parser = argparse.ArgumentParser(description="AgentCAD backend command line tools.")
+    parser.parse_args()
+
+
+def main() -> None:
+    server_main()
 
 
 if __name__ == "__main__":
